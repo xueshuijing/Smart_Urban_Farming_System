@@ -1,5 +1,19 @@
 # Smart Urban Farming – System Architecture
 
+
+# Smart Urban Farming – System Architecture
+
+## Version 1 Architecture (MVP)
+
+![Version 1 Architecture](system-architecture-v1.png)
+
+---
+
+## Future Architecture (Version 2 & Version 3)
+
+![Future Architecture](system-architecture-future.png)
+
+
 ## Overview
 
 The Smart Urban Farming system is designed using a modular and scalable architecture.  
