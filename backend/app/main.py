@@ -15,28 +15,62 @@ db.py (database connection)
         ↓
 PostgreSQL
 
-
-
 """
 
 from fastapi import FastAPI
 
-from app.database.db import engine, Base
 from app.routes import plants
+from app.database.db import Base, engine
 
-# Create FastAPI app
+from app.core.logger import setup_logger
+from app.core.error_handler import (
+    http_exception_handler,
+    validation_exception_handler,
+    general_exception_handler
+)
+
+from fastapi.exceptions import RequestValidationError
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+
+# setup logger
+logger = setup_logger()
+
+logger.info("Starting Smart Farming API")
+
+# create database tables
+Base.metadata.create_all(bind=engine)
+
 app = FastAPI(
-    title="Smart Farming System",
+    title="Smart Farming API",
     version="1.0"
 )
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
 
-# Include routes
+# include routes
 app.include_router(plants.router)
+
+
+# register global exception handlers
+app.add_exception_handler(
+    StarletteHTTPException,
+    http_exception_handler
+)
+
+app.add_exception_handler(
+    RequestValidationError,
+    validation_exception_handler
+)
+
+app.add_exception_handler(
+    Exception,
+    general_exception_handler
+)
 
 
 @app.get("/")
 def root():
-    return {"message": "Smart Farming API is running"}
+    logger.info("Root endpoint accessed")
+    return {
+        "message": "Smart Farming API running"
+    }
