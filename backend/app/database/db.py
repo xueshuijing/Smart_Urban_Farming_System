@@ -1,13 +1,13 @@
 """
-Database connection and session management.
+Database connection and session management.The bridge between FastAPI and PostgreSQL.
 
 This file is responsible for:
 
 1. Connecting FastAPI to PostgreSQL
-2. Creating SQLAlchemy engine
-3. Creating database session
+2. Creating SQLAlchemy engine : Connects FastAPI to PostgreSQL.
+3. Creating database session: opens database connection
 4. Providing Base class for models
-5. Managing database dependency for API routes
+5. Managing database dependency for API routes: provides safe connection to routes.
 """
 
 # SQLAlchemy core tools
@@ -72,6 +72,8 @@ class Plant(Base):
     __tablename__ = "plants"
 
 This allows SQLAlchemy to create tables.
+In SQLAlchemy, declarative_base() is a factory function used to create a base class for your database models. 
+When you define classes that inherit from this base, SQLAlchemy's "Declarative" system automatically maps those classes to database tables
 """
 
 Base = declarative_base()
