@@ -12,6 +12,7 @@ documents API automatically
 """
 
 from pydantic import BaseModel
+from typing import Optional
 
 
 # ===============================
@@ -22,6 +23,7 @@ class PlantBase(BaseModel):
     name: str
     species: str
     location: str
+    growth_stage: Optional[str] = None
 
 
 # ===============================
@@ -29,6 +31,9 @@ class PlantBase(BaseModel):
 # ===============================
 
 class PlantCreate(PlantBase):
+    """
+    Used when creating a plant.
+    """
     pass
 
 
@@ -36,11 +41,15 @@ class PlantCreate(PlantBase):
 # UPDATE SCHEMA
 # ===============================
 
-class PlantUpdate(PlantBase):
+class PlantUpdate(BaseModel):
     """
     Used when updating plant.
+    All fields optional for partial update.
     """
-    pass
+    name: Optional[str] = None
+    species: Optional[str] = None
+    location: Optional[str] = None
+    growth_stage: Optional[str] = None
 
 
 # ===============================
@@ -51,4 +60,4 @@ class PlantResponse(PlantBase):
     id: int
 
     class Config:
-        orm_mode = True
+        orm_mode = True  # for SQLAlchemy compatibility

@@ -8,12 +8,21 @@ from app.models.plant import Plant
 from app.schemas.plant_schema import PlantCreate, PlantUpdate
 
 
-# Create plant
-def create_plant(db: Session, plant: PlantCreate):
+# ===============================
+# CREATE PLANT
+# ===============================
+
+def create_plant(db: Session, plant: PlantCreate, user_id: int):
+    """
+    Create a new plant linked to a specific user.
+    """
+
     new_plant = Plant(
         name=plant.name,
         species=plant.species,
-        location=plant.location
+        location=plant.location,
+        growth_stage=plant.growth_stage,
+        owner_id=user_id  # ✅ link to user
     )
 
     db.add(new_plant)
@@ -23,19 +32,53 @@ def create_plant(db: Session, plant: PlantCreate):
     return new_plant
 
 
-# Get all plants
-def get_all_plants(db: Session):
-    return db.query(Plant).all()
+# ===============================
+# GET ALL PLANTS (USER-SCOPED)
+# ===============================
+
+def get_all_plants(db: Session, user_id: int):
+    """
+    Get all plants belonging to the current user.
+    """
+
+    return db.query(Plant).filter(
+        Plant.owner_id == user_id
+    ).all()
 
 
-# Get plant by id
-def get_plant_by_id(db: Session, plant_id: int):
-    return db.query(Plant).filter(Plant.id == plant_id).first()
+# ===============================
+# GET PLANT BY ID (USER-SCOPED)
+# ===============================
+
+def get_plant_by_id(db: Session, plant_id: int, user_id: int):
+    """
+    Get a single plant only if it belongs to the user.
+    """
+
+    return db.query(Plant).filter(
+        Plant.id == plant_id,
+        Plant.owner_id == user_id
+    ).first()
 
 
-# Update plant
-def update_plant(db: Session, plant_id: int, plant_update: PlantUpdate):
-    plant = db.query(Plant).filter(Plant.id == plant_id).first()
+# ===============================
+# UPDATE PLANT (USER-SCOPED)
+# ===============================
+
+def update_plant(
+    db: Session,
+    plant_id: int,
+    plant_update: PlantUpdate,
+    user_id: int
+):
+    """
+    Update a plant only if it belongs to the user.
+    """
+
+    plant = db.query(Plant).filter(
+        Plant.id == plant_id,
+        Plant.owner_id == user_id
+    ).first()
 
     if not plant:
         return None
@@ -49,15 +92,28 @@ def update_plant(db: Session, plant_id: int, plant_update: PlantUpdate):
     if plant_update.location is not None:
         plant.location = plant_update.location
 
+    if plant_update.growth_stage is not None:
+        plant.growth_stage = plant_update.growth_stage  # ✅ added
+
     db.commit()
     db.refresh(plant)
 
     return plant
 
 
-# Delete plant
-def delete_plant(db: Session, plant_id: int):
-    plant = db.query(Plant).filter(Plant.id == plant_id).first()
+# ===============================
+# DELETE PLANT (USER-SCOPED)
+# ===============================
+
+def delete_plant(db: Session, plant_id: int, user_id: int):
+    """
+    Delete a plant only if it belongs to the user.
+    """
+
+    plant = db.query(Plant).filter(
+        Plant.id == plant_id,
+        Plant.owner_id == user_id
+    ).first()
 
     if not plant:
         return False

@@ -11,8 +11,7 @@ defines primary keys
 SQLAlchemy converts this to SQL
 
 """
-
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, ForeignKey
 from app.database.db import Base
 
 
@@ -20,6 +19,11 @@ class Plant(Base):
     __tablename__ = "plants"
 
     id = Column(Integer, primary_key=True, index=True)
+
     name = Column(String, nullable=False)
     species = Column(String, nullable=False)
     location = Column(String, nullable=False)
+    growth_stage = Column(String, nullable=True)
+
+    # ✅ NEW: link plant to user
+    owner_id = Column(Integer, ForeignKey("users.id"), nullable=False)

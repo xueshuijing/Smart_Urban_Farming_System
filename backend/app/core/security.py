@@ -32,6 +32,9 @@ from app.core.config import (
     ALGORITHM,
     ACCESS_TOKEN_EXPIRE_MINUTES
 )
+from app.database.db import SessionLocal
+from app.models.user import User
+
 
 
 # Password hashing setup
@@ -64,12 +67,9 @@ def create_access_token(data: dict):
 
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
-
 def get_current_user(token: str = Depends(oauth2_scheme)):
     """
-    Decode JWT token and return current user identity
-
-    Used as dependency in protected routes
+    Decode JWT and return full User object
     """
 
     try:
@@ -79,7 +79,14 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         if email is None:
             raise HTTPException(status_code=401, detail="Invalid token")
 
-        return email
+        db = SessionLocal()
+        user = db.query(User).filter(User.email == email).first()
+        db.close()
+
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+
+        return user
 
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
