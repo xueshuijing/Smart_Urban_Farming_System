@@ -21,87 +21,56 @@ Uses db session saves
 Returns response
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-import logging
-
+from typing import List
+from app.api.deps import get_current_user_id
 from app.database.db import get_db
-from app.schemas.plant_schema import (
-    PlantCreate,
-    PlantUpdate,
-    PlantResponse
-)
+from app.schemas.plant_schema import PlantCreate, PlantUpdate, PlantResponse
 from app.services import plant_service
-from app.core.security import get_current_user
-from app.models.user import User
-
 
 router = APIRouter(
     prefix="/plants",
     tags=["Plants"]
 )
 
-logger = logging.getLogger("smart_farming")
 
 
-# Create plant
-@router.post(
-    "/",
-    response_model=PlantResponse,
-    status_code=status.HTTP_201_CREATED
-)
+# ===============================
+# CREATE PLANT
+# ===============================
+@router.post("/", response_model=PlantResponse)
 def create_plant(
     plant: PlantCreate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    user_id: int = Depends(get_current_user_id)
 ):
-    logger.info(f"Creating plant: {plant.name}")
+    try:
+        return plant_service.create_plant(db, plant, user_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    new_plant = plant_service.create_plant(
-        db,
-        plant,
-        current_user.id  # ✅ pass user id
-    )
-    logger.info(f"Plant created with ID: {new_plant.id}")
-
-    return new_plant
-
-
-# Get all plants
-@router.get(
-    "/",
-    response_model=list[PlantResponse]
-)
-def get_all_plants(
+# ===============================
+# GET ALL PLANTS
+# ===============================
+@router.get("/", response_model=List[PlantResponse])
+def get_plants(
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    user_id: int = Depends(get_current_user_id)
 ):
-    logger.info("Fetching all plants")
-
-    plants = plant_service.get_all_plants(db, current_user.id)
-
-    logger.info(f"{len(plants)} plants retrieved")
-
-    return plants
+    return plant_service.get_plants(db, user_id)
 
 
-# Get plant by id
-@router.get(
-    "/{plant_id}",
-    response_model=PlantResponse
-)
+# ===============================
+# GET SINGLE PLANT
+# ===============================
+@router.get("/{plant_id}", response_model=PlantResponse)
 def get_plant(
     plant_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    user_id: int = Depends(get_current_user_id)
 ):
-    logger.info(f"Fetching plant ID: {plant_id}")
-
-    plant = plant_service.get_plant_by_id(
-        db,
-        plant_id,
-        current_user.id
-    )
+    plant = plant_service.get_plant(db, plant_id, user_id)
 
     if not plant:
         raise HTTPException(status_code=404, detail="Plant not found")
@@ -109,58 +78,41 @@ def get_plant(
     return plant
 
 
-# Update plant
-@router.put(
-    "/{plant_id}",
-    response_model=PlantResponse
-)
+# ===============================
+# UPDATE PLANT
+# ===============================
+@router.patch("/{plant_id}", response_model=PlantResponse)
 def update_plant(
     plant_id: int,
     plant_update: PlantUpdate,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    user_id: int = Depends(get_current_user_id)
 ):
-    logger.info(f"Updating plant ID: {plant_id}")
+    try:
+        updated = plant_service.update_plant(db, plant_id, plant_update, user_id)
 
-    updated_plant = plant_service.update_plant(
-        db,
-        plant_id,
-        plant_update,
-        current_user.id
-    )
+        if not updated:
+            raise HTTPException(status_code=404, detail="Plant not found")
 
-    if not updated_plant:
-        logger.warning(f"Plant not found for update: {plant_id}")
-        raise HTTPException(status_code=404, detail="Plant not found")
+        return updated
 
-    logger.info(f"Plant updated: {plant_id}")
-
-    return updated_plant
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
-# Delete plant
-@router.delete(
-    "/{plant_id}",
-    status_code=status.HTTP_200_OK
-)
+# ===============================
+# DELETE PLANT
+# ===============================
+@router.delete("/{plant_id}")
 def delete_plant(
     plant_id: int,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    user_id: int = Depends(get_current_user_id)
 ):
-    logger.info(f"Deleting plant ID: {plant_id}")
+    deleted = plant_service.delete_plant(db, plant_id, user_id)
 
-    success = plant_service.delete_plant(
-        db,
-        plant_id,
-        current_user.id
-    )
-
-    if not success:
-        logger.warning(f"Plant not found for deletion: {plant_id}")
+    if not deleted:
         raise HTTPException(status_code=404, detail="Plant not found")
-
-    logger.info(f"Plant deleted: {plant_id}")
 
     return {"message": "Plant deleted successfully"}
 

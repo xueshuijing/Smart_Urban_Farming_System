@@ -2,27 +2,36 @@
 Plant service layer contains business logic related to plants.
 Routes --> call services--> talk to database.
 """
-
 from sqlalchemy.orm import Session
 from app.models.plant import Plant
+from app.models.location import Location
 from app.schemas.plant_schema import PlantCreate, PlantUpdate
 
 
 # ===============================
 # CREATE PLANT
 # ===============================
-
 def create_plant(db: Session, plant: PlantCreate, user_id: int):
-    """
-    Create a new plant linked to a specific user.
-    """
+
+    # 🔒 Validate location ownership
+    if plant.location_id is not None:
+        location = db.query(Location).filter(
+            Location.id == plant.location_id,
+            Location.user_id == user_id
+        ).first()
+
+        if not location:
+            raise ValueError("Invalid location or not owned by user")
 
     new_plant = Plant(
         name=plant.name,
         species=plant.species,
-        location=plant.location,
-        growth_stage=plant.growth_stage,
-        owner_id=user_id  # ✅ link to user
+        location_id=plant.location_id,
+        group_id=plant.group_id,
+        environment_type=plant.environment_type,
+        planting_date=plant.planting_date,
+        source=plant.source,
+        user_id=user_id
     )
 
     db.add(new_plant)
@@ -35,65 +44,46 @@ def create_plant(db: Session, plant: PlantCreate, user_id: int):
 # ===============================
 # GET ALL PLANTS (USER-SCOPED)
 # ===============================
-
-def get_all_plants(db: Session, user_id: int):
-    """
-    Get all plants belonging to the current user.
-    """
-
-    return db.query(Plant).filter(
-        Plant.owner_id == user_id
-    ).all()
+def get_plants(db: Session, user_id: int):
+    return db.query(Plant).filter(Plant.user_id == user_id).all()
 
 
 # ===============================
 # GET PLANT BY ID (USER-SCOPED)
 # ===============================
-
-def get_plant_by_id(db: Session, plant_id: int, user_id: int):
-    """
-    Get a single plant only if it belongs to the user.
-    """
-
+def get_plant(db: Session, plant_id: int, user_id: int):
     return db.query(Plant).filter(
         Plant.id == plant_id,
-        Plant.owner_id == user_id
+        Plant.user_id == user_id
     ).first()
 
 
 # ===============================
 # UPDATE PLANT (USER-SCOPED)
 # ===============================
-
-def update_plant(
-    db: Session,
-    plant_id: int,
-    plant_update: PlantUpdate,
-    user_id: int
-):
-    """
-    Update a plant only if it belongs to the user.
-    """
+def update_plant(db: Session, plant_id: int, plant_update: PlantUpdate, user_id: int):
 
     plant = db.query(Plant).filter(
         Plant.id == plant_id,
-        Plant.owner_id == user_id
+        Plant.user_id == user_id
     ).first()
 
     if not plant:
         return None
 
-    if plant_update.name is not None:
-        plant.name = plant_update.name
+    # 🔒 Validate location if updating
+    if plant_update.location_id is not None:
+        location = db.query(Location).filter(
+            Location.id == plant_update.location_id,
+            Location.user_id == user_id
+        ).first()
 
-    if plant_update.species is not None:
-        plant.species = plant_update.species
+        if not location:
+            raise ValueError("Invalid location")
 
-    if plant_update.location is not None:
-        plant.location = plant_update.location
-
-    if plant_update.growth_stage is not None:
-        plant.growth_stage = plant_update.growth_stage  # ✅ added
+    # ✅ Safe partial update
+    for field, value in plant_update.dict(exclude_unset=True).items():
+        setattr(plant, field, value)
 
     db.commit()
     db.refresh(plant)
@@ -104,21 +94,16 @@ def update_plant(
 # ===============================
 # DELETE PLANT (USER-SCOPED)
 # ===============================
-
 def delete_plant(db: Session, plant_id: int, user_id: int):
-    """
-    Delete a plant only if it belongs to the user.
-    """
-
     plant = db.query(Plant).filter(
         Plant.id == plant_id,
-        Plant.owner_id == user_id
+        Plant.user_id == user_id
     ).first()
 
     if not plant:
-        return False
+        return None
 
     db.delete(plant)
     db.commit()
 
-    return True
+    return plant

@@ -23,7 +23,7 @@ Security Notes:
 from datetime import datetime, timedelta
 from jose import jwt, JWTError
 from passlib.context import CryptContext
-
+from app.core.config import SECRET_KEY, ALGORITHM
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 
@@ -90,3 +90,39 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
 
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
+
+def decode_token(token: str):
+    """
+    Decode and validate a JWT token.
+
+    Purpose:
+    - Verify token integrity using SECRET_KEY
+    - Extract payload data (e.g., user_id)
+
+    Parameters:
+        token (str): JWT token from client request
+
+    Returns:
+        dict | None:
+            - Decoded payload if valid
+            - None if token is invalid or expired
+
+    Security Notes:
+    - Uses HS256 algorithm (or configured ALGORITHM)
+    - Prevents tampered tokens from being accepted
+
+    Typical Payload Structure:
+    {
+        "sub": "user_id",
+        "exp": expiration_timestamp
+    }
+
+    Why important:
+    - Central point for JWT validation
+    - Keeps authentication logic reusable across the app
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except Exception:
+        return None

@@ -25,10 +25,20 @@ Architecture Role:
 - Connects all layers together
 - Starts the backend server
 """
+# 🔥 Force all models to load explicitly
+from app.models.user import User
+from app.models.location import Location
+from app.models.plant_group import PlantGroup
+from app.models.plant import Plant
+from app.models.plant_growth import PlantGrowth
+from app.models.soil_condition import SoilCondition
+from app.models.plant_action import PlantAction
+from app.models.notification import Notification
+from app.models.plant_species_cache import PlantSpeciesCache
 
 from fastapi import FastAPI
 
-from app.api.v1.routes import plants, auth
+from app.api.v1.routes import plants, auth, locations
 from app.database.db import Base, engine
 
 from app.core.logger import setup_logger
@@ -41,6 +51,8 @@ from app.core.error_handler import (
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+print("Using DB:", engine.url)
+Base.metadata.create_all(bind=engine)
 
 # ✅ 1. Create app FIRST
 app = FastAPI(
@@ -58,6 +70,7 @@ Base.metadata.create_all(bind=engine)
 # ✅ 4. Register routes
 app.include_router(auth.router)
 app.include_router(plants.router)
+app.include_router(locations.router)
 
 # ✅ 5. Register exception handlers
 app.add_exception_handler(

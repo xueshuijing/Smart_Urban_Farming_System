@@ -11,53 +11,67 @@ prevents bad data
 documents API automatically
 """
 
+
 from pydantic import BaseModel
 from typing import Optional
+from datetime import date, datetime
+from app.schemas.location_schema import LocationResponse
 
 
 # ===============================
-# BASE SCHEMA
+# CREATE
 # ===============================
-
-class PlantBase(BaseModel):
+class PlantCreate(BaseModel):
     name: str
-    species: str
-    location: str
-    growth_stage: Optional[str] = None
+    species: Optional[str] = None
+
+    location_id: Optional[int] = None
+    group_id: Optional[int] = None
+
+    environment_type: Optional[str] = "outdoor"
+    planting_date: Optional[date] = None
+
+    source: Optional[str] = "manual"
 
 
 # ===============================
-# CREATE SCHEMA
+# UPDATE
 # ===============================
-
-class PlantCreate(PlantBase):
-    """
-    Used when creating a plant.
-    """
-    pass
-
-
-# ===============================
-# UPDATE SCHEMA
-# ===============================
-
 class PlantUpdate(BaseModel):
-    """
-    Used when updating plant.
-    All fields optional for partial update.
-    """
     name: Optional[str] = None
     species: Optional[str] = None
-    location: Optional[str] = None
-    growth_stage: Optional[str] = None
+
+    location_id: Optional[int] = None
+    group_id: Optional[int] = None
+
+    environment_type: Optional[str] = None
+    planting_date: Optional[date] = None
+
+    is_synced: Optional[bool] = None
 
 
 # ===============================
-# RESPONSE SCHEMA
+# RESPONSE
 # ===============================
-
-class PlantResponse(PlantBase):
+class PlantResponse(BaseModel):
     id: int
+    name: str
+    species: Optional[str]
+
+    user_id: int
+    location_id: Optional[int]
+    group_id: Optional[int]
+
+    environment_type: str
+    planting_date: Optional[date]
+
+    is_synced: bool
+    source: str
+
+    created_at: datetime
+
+    # ✅ NEW: include location info
+    location: Optional[LocationResponse] = None
 
     class Config:
-        orm_mode = True  # for SQLAlchemy compatibility
+        from_attributes = True  # for SQLAlchemy ORM

@@ -1,0 +1,36 @@
+from pydantic import BaseModel
+from typing import Optional
+from datetime import datetime
+
+
+# ===============================
+# CREATE
+# ===============================
+class LocationCreate(BaseModel):
+    name: str  # e.g. "Backyard", "Balcony"
+    description: Optional[str] = None
+    environment_type: Optional[str] = None  # indoor / outdoor / greenhouse
+
+
+# ===============================
+# UPDATE
+# ===============================
+class LocationUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    environment_type: Optional[str] = None
+
+
+# ===============================
+# RESPONSE
+# ===============================
+class LocationResponse(BaseModel):
+    id: int
+    name: str
+    description: Optional[str]
+    environment_type: Optional[str]
+    user_id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
