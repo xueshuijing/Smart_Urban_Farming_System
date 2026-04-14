@@ -2,7 +2,7 @@ def test_login_placeholder(client):
     response = client.post(
         "/auth/login",
         data={
-            "username": "test",
+            "username": "test@email.com",
             "password": "test123"
         }
     )

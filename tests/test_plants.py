@@ -3,27 +3,27 @@ import uuid
 
 def get_auth_token(client):
     unique_email = f"test_{uuid.uuid4()}@example.com"
+    paswd = "test123"
 
     # Register user
     client.post(
         "/auth/register",
         json={
             "email": unique_email,
-            "password": "test123"
+            "password": paswd
         }
     )
 
     # Login user
     response = client.post(
         "/auth/login",
-        json={
-            "email": unique_email,
-            "password": "test123"
+        data={
+            "username": unique_email,
+            "password": paswd
         }
     )
-
-    # Debug safety (optional but smart)
-    assert response.status_code == 200, response.json()
+    # Safety check: if this fails, response.json() is a dict (safe for logging)
+    assert response.status_code == 200, f"Login failed: {response.text}"
 
     return response.json()["access_token"]
 
