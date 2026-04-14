@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.plant import Plant
 from app.models.location import Location
 from app.schemas.plant_schema import PlantCreate, PlantUpdate
-
+from app.core.exceptions import NotFoundError, PermissionDeniedError
 
 # ===============================
 # CREATE PLANT
@@ -16,12 +16,14 @@ def create_plant(db: Session, plant: PlantCreate, user_id: int):
     # 🔒 Validate location ownership
     if plant.location_id is not None:
         location = db.query(Location).filter(
-            Location.id == plant.location_id,
-            Location.user_id == user_id
+            Location.id == plant.location_id
         ).first()
 
         if not location:
-            raise ValueError("Invalid location or not owned by user")
+            raise NotFoundError("Location not found")
+
+        if location.user_id != user_id:
+            raise PermissionDeniedError("Not allowed to use this location")
 
     new_plant = Plant(
         name=plant.name,
@@ -41,6 +43,7 @@ def create_plant(db: Session, plant: PlantCreate, user_id: int):
     return new_plant
 
 
+
 # ===============================
 # GET ALL PLANTS (USER-SCOPED)
 # ===============================
@@ -56,7 +59,6 @@ def get_plant(db: Session, plant_id: int, user_id: int):
         Plant.id == plant_id,
         Plant.user_id == user_id
     ).first()
-
 
 # ===============================
 # UPDATE PLANT (USER-SCOPED)
@@ -74,14 +76,15 @@ def update_plant(db: Session, plant_id: int, plant_update: PlantUpdate, user_id:
     # 🔒 Validate location if updating
     if plant_update.location_id is not None:
         location = db.query(Location).filter(
-            Location.id == plant_update.location_id,
-            Location.user_id == user_id
+            Location.id == plant_update.location_id
         ).first()
 
         if not location:
-            raise ValueError("Invalid location")
+            raise NotFoundError("Location not found")
 
-    # ✅ Safe partial update
+        if location.user_id != user_id:
+            raise PermissionDeniedError("Not allowed to use this location")
+
     for field, value in plant_update.dict(exclude_unset=True).items():
         setattr(plant, field, value)
 
@@ -89,7 +92,6 @@ def update_plant(db: Session, plant_id: int, plant_update: PlantUpdate, user_id:
     db.refresh(plant)
 
     return plant
-
 
 # ===============================
 # DELETE PLANT (USER-SCOPED)

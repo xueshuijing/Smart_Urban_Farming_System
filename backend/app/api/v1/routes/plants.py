@@ -48,7 +48,9 @@ def create_plant(
     try:
         return plant_service.create_plant(db, plant, user_id)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
 # ===============================
 # GET ALL PLANTS
@@ -97,7 +99,9 @@ def update_plant(
         return updated
 
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e))
+    except PermissionError as e:
+        raise HTTPException(status_code=403, detail=str(e))
 
 
 # ===============================

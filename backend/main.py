@@ -25,7 +25,11 @@ Architecture Role:
 - Connects all layers together
 - Starts the backend server
 """
-# 🔥 Force all models to load explicitly
+
+# ===============================
+# FORCE MODEL REGISTRATION
+# ===============================
+# Ensures SQLAlchemy detects all tables
 from app.models.user import User
 from app.models.location import Location
 from app.models.plant_group import PlantGroup
@@ -36,59 +40,59 @@ from app.models.plant_action import PlantAction
 from app.models.notification import Notification
 from app.models.plant_species_cache import PlantSpeciesCache
 
+
+# ===============================
+# IMPORTS
+# ===============================
 from fastapi import FastAPI
 
 from app.api.v1.routes import plants, auth, locations
 from app.database.db import Base, engine
 
 from app.core.logger import setup_logger
-from app.core.error_handler import (
-    http_exception_handler,
-    validation_exception_handler,
-    general_exception_handler
-)
+from app.core.error_handler import add_exception_handlers
 
-from fastapi.exceptions import RequestValidationError
-from starlette.exceptions import HTTPException as StarletteHTTPException
 
-print("Using DB:", engine.url)
-Base.metadata.create_all(bind=engine)
-
-# ✅ 1. Create app FIRST
+# ===============================
+# CREATE APP
+# ===============================
 app = FastAPI(
     title="Smart Farming API",
     version="1.0"
 )
 
-# ✅ 2. Setup logger
+
+# ===============================
+# LOGGER SETUP
+# ===============================
 logger = setup_logger()
 logger.info("Starting Smart Farming API")
 
-# ✅ 3. Create database tables
+
+# ===============================
+# DATABASE INIT
+# ===============================
+print("Using DB:", engine.url)
 Base.metadata.create_all(bind=engine)
 
-# ✅ 4. Register routes
+
+# ===============================
+# ROUTES
+# ===============================
 app.include_router(auth.router)
 app.include_router(plants.router)
 app.include_router(locations.router)
 
-# ✅ 5. Register exception handlers
-app.add_exception_handler(
-    StarletteHTTPException,
-    http_exception_handler
-)
 
-app.add_exception_handler(
-    RequestValidationError,
-    validation_exception_handler
-)
-
-app.add_exception_handler(
-    Exception,
-    general_exception_handler
-)
+# ===============================
+# ERROR HANDLERS (CENTRALIZED)
+# ===============================
+add_exception_handlers(app)
 
 
+# ===============================
+# ROOT ENDPOINT
+# ===============================
 @app.get("/")
 def root():
     logger.info("Root endpoint accessed")

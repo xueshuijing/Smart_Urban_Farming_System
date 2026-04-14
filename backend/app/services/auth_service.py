@@ -75,8 +75,10 @@ def login_user(db: Session, email: str, password: str):
 
     token = create_access_token(
         data={
+
             "sub": str(user.id),
             "email": user.email
+
         }
     )
 

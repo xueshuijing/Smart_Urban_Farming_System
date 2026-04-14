@@ -1,3 +1,8 @@
+'''
+Use shared client from conftest — never redefine DB setup
+'''
+
+
 def test_login_placeholder(client):
     response = client.post(
         "/auth/login",
