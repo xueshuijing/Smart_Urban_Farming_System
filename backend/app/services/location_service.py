@@ -1,5 +1,8 @@
 from sqlalchemy.orm import Session
+from fastapi import HTTPException
+
 from app.models.location import Location
+from app.models.plant import Plant
 from app.schemas.location_schema import LocationCreate, LocationUpdate
 
 
@@ -60,7 +63,7 @@ def update_location(db: Session, location_id: int, location_update: LocationUpda
 
 
 # ===============================
-# DELETE
+# DELETE (FIXED 🔥)
 # ===============================
 def delete_location(db: Session, location_id: int, user_id: int):
     location = db.query(Location).filter(
@@ -70,6 +73,17 @@ def delete_location(db: Session, location_id: int, user_id: int):
 
     if not location:
         return None
+
+    # 🔥 Prevent deletion if plants exist
+    plant_exists = db.query(Plant).filter(
+        Plant.location_id == location_id
+    ).first()
+
+    if plant_exists:
+        raise HTTPException(
+            status_code=400,
+            detail="Cannot delete location with existing plants"
+        )
 
     db.delete(location)
     db.commit()

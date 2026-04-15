@@ -11,7 +11,6 @@ defines primary keys
 SQLAlchemy converts this to SQL
 
 """
-
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, Date, TIMESTAMP, func
 from sqlalchemy.orm import relationship
 from app.database.db import Base
@@ -36,6 +35,14 @@ class Plant(Base):
 
     planting_date = Column(Date)
     source = Column(String(50), default="manual")
+
+    # 🌱 ===============================
+    # IRRIGATION FIELDS (NEW)
+    # ===============================
+    last_watered = Column(Date, nullable=True)  # last watering date
+    watering_interval_days = Column(Integer, default=3)  # default every 3 days
+
+    # ===============================
 
     created_at = Column(TIMESTAMP, server_default=func.now())
     updated_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())

@@ -17,7 +17,6 @@ from typing import Optional
 from datetime import date, datetime
 from app.schemas.location_schema import LocationResponse
 
-
 # ===============================
 # CREATE
 # ===============================
@@ -32,6 +31,9 @@ class PlantCreate(BaseModel):
     planting_date: Optional[date] = None
 
     source: Optional[str] = "manual"
+
+    # 🌱 NEW
+    watering_interval_days: Optional[int] = 3
 
 
 # ===============================
@@ -48,6 +50,10 @@ class PlantUpdate(BaseModel):
     planting_date: Optional[date] = None
 
     is_synced: Optional[bool] = None
+
+    # 🌱 NEW
+    watering_interval_days: Optional[int] = None
+    last_watered: Optional[date] = None
 
 
 # ===============================
@@ -70,12 +76,10 @@ class PlantResponse(BaseModel):
 
     created_at: datetime
 
-    # ✅ NEW: include location info
+    # 🌱 NEW
+    last_watered: Optional[date]
+    watering_interval_days: int
+
     location: Optional[LocationResponse] = None
 
     model_config = ConfigDict(from_attributes=True)
-
-'''
-    class Config:
-        from_attributes = True  # for SQLAlchemy ORM
-'''

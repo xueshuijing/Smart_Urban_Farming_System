@@ -48,3 +48,26 @@ def test_get_locations_unauthorized(client):
     response = client.get("/locations/")
 
     assert response.status_code == 401
+
+def test_user_cannot_access_other_users_locations(client, create_user):
+    """
+    Ensure user cannot access another user's locations.
+    """
+    token_a = create_user()
+    token_b = create_user()
+
+    headers_a = {"Authorization": f"Bearer {token_a}"}
+    headers_b = {"Authorization": f"Bearer {token_b}"}
+
+    # User A creates location
+    client.post("/locations/", json={
+        "name": "User A Location"
+    }, headers=headers_a)
+
+    # User B fetches locations
+    response = client.get("/locations/", headers=headers_b)
+
+    data = response.json()
+
+    # Ensure User B does NOT see User A's data
+    assert all(loc["name"] != "User A Location" for loc in data)

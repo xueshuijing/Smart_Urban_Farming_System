@@ -214,37 +214,21 @@ def test_create_plant_invalid_location(client, token):
 
     assert response.status_code in [400, 404]
 
-def test_create_plant_wrong_user_location(client):
+def test_create_plant_wrong_user_location(client, create_user):
     """
     User should NOT use another user's location.
     """
-    # User A
-    token_a = client.post("/auth/register", json={
-        "email": "a@test.com",
-        "password": "123456"
-    })
+    token_a = create_user()
+    token_b = create_user()
 
-    token_a = client.post("/auth/login", data={
-        "username": "a@test.com",
-        "password": "123456"
-    }).json()["access_token"]
-
-    # User B
-    token_b = client.post("/auth/register", json={
-        "email": "b@test.com",
-        "password": "123456"
-    })
-
-    token_b = client.post("/auth/login", data={
-        "username": "b@test.com",
-        "password": "123456"
-    }).json()["access_token"]
+    headers_a = {"Authorization": f"Bearer {token_a}"}
+    headers_b = {"Authorization": f"Bearer {token_b}"}
 
     # User A creates location
     location = client.post(
         "/locations/",
         json={"name": "Private Location"},
-        headers={"Authorization": f"Bearer {token_a}"}
+        headers=headers_a
     ).json()
 
     # User B tries to use it
@@ -258,15 +242,15 @@ def test_create_plant_wrong_user_location(client):
             "source": "test",
             "location_id": location["id"]
         },
-        headers={"Authorization": f"Bearer {token_b}"}
+        headers=headers_b
     )
 
     assert response.status_code in [403, 404]
 
 
-def test_delete_location_effect_on_plants(client, token):
+def test_delete_location_blocked_if_has_plants(client, token):
     """
-    What happens to plants when location is deleted?
+    Deleting a location with plants should be blocked.
     """
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -275,7 +259,7 @@ def test_delete_location_effect_on_plants(client, token):
         "name": "Temp Location"
     }, headers=headers).json()
 
-    # Create plant
+    # Create plant linked to location
     client.post("/plants/", json={
         "name": "Temp Plant",
         "species": "Test",
@@ -285,12 +269,8 @@ def test_delete_location_effect_on_plants(client, token):
         "location_id": loc["id"]
     }, headers=headers)
 
-    # Delete location (if endpoint exists)
+    # Attempt delete
     response = client.delete(f"/locations/{loc['id']}", headers=headers)
 
-    # Decide expected behavior:
-    # - 400 (blocked)
-    # - or cascade delete
-    # - or set null
+    assert response.status_code == 400
 
-    assert response.status_code in [200, 204, 400]

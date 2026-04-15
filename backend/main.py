@@ -46,7 +46,7 @@ from app.models.plant_species_cache import PlantSpeciesCache
 # ===============================
 from fastapi import FastAPI
 
-from app.api.v1.routes import plants, auth, locations
+from app.api.v1.routes import plants, auth, locations, irrigation
 from app.database.db import Base, engine
 
 from app.core.logger import setup_logger
@@ -82,6 +82,7 @@ Base.metadata.create_all(bind=engine)
 app.include_router(auth.router)
 app.include_router(plants.router)
 app.include_router(locations.router)
+app.include_router(irrigation.router, prefix="/irrigation", tags=["Irrigation"])
 
 
 # ===============================
