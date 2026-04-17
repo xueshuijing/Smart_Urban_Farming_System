@@ -1,3 +1,6 @@
+# tests/test_main.py
+
+
 def test_root(client):
     response = client.get("/")
 

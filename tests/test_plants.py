@@ -90,6 +90,10 @@ def token(client):
     return response.json()["access_token"]
 
 '''
+
+
+# tests/test_plants.py
+
 def test_get_plants(client, token):
     """Test retrieving plants using the token fixture."""
     headers = {"Authorization": f"Bearer {token}"}

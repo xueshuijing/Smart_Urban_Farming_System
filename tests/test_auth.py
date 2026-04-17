@@ -1,4 +1,5 @@
 '''
+# tests/test_auth.py
 Use shared client from conftest — never redefine DB setup
 '''
 

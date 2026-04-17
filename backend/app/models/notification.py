@@ -12,9 +12,10 @@ class Notification(Base):
     plant_id = Column(Integer, ForeignKey("plants.id", ondelete="CASCADE"))
 
     message = Column(String, nullable=False)
-    type = Column(String(50))
+    type = Column(String(50), default="irrigation")
 
     is_read = Column(Boolean, default=False)
+
     created_at = Column(TIMESTAMP, server_default=func.now())
 
     # Relationships

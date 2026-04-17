@@ -42,6 +42,9 @@ class Plant(Base):
     last_watered = Column(Date, nullable=True)  # last watering date
     watering_interval_days = Column(Integer, default=3)  # default every 3 days
 
+    # 🌱 SENSOR CONTROL (NEW)
+    use_sensor = Column(Boolean, default=False, nullable=False)
+
     # ===============================
 
     created_at = Column(TIMESTAMP, server_default=func.now())

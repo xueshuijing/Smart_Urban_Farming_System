@@ -1,43 +1,86 @@
-from fastapi import APIRouter, Depends
+# backend/app/api/v1/routes/irrigation.py
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+
 from app.database.db import get_db
-from app.services.irrigation_service import (
-    get_plants_needing_water,
-    water_plant,
-    water_all_due_plants
+from app.api.deps import get_current_user_id
+from app.services import irrigation_service
+
+# ✅ Add prefix here for clean routing
+router = APIRouter(
+    prefix="/irrigation",
+    tags=["Irrigation"]
 )
 
-router = APIRouter(prefix="/irrigation", tags=["Irrigation"])
-
 
 # ===============================
-# GET PLANTS NEEDING WATER
+# CHECK PLANTS NEEDING WATER
 # ===============================
-@router.get("/check")
-def check_irrigation(user_id: int, db: Session = Depends(get_db)):
+@router.get("/needs-water")
+def get_plants_needing_water(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
     """
-    Returns all plants that need watering
+    Returns plants that need watering for the logged-in user.
+    Also triggers notification creation if needed.
     """
-    return get_plants_needing_water(db, user_id)
+    plants = irrigation_service.get_plants_needing_water(
+        db=db,
+        user_id=user_id
+    )
+
+    return plants
 
 
 # ===============================
-# WATER SINGLE PLANT
+# WATER A PLANT
 # ===============================
 @router.post("/water/{plant_id}")
-def water_single_plant(plant_id: int, user_id: int, db: Session = Depends(get_db)):
+def water_plant(
+    plant_id: int,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
     """
-    Manually water a plant
+    Marks a plant as watered (only if it belongs to the user).
     """
-    return water_plant(db, plant_id, user_id)
+    plant = irrigation_service.water_plant(
+        db=db,
+        plant_id=plant_id,
+        user_id=user_id
+    )
+
+    if not plant:
+        raise HTTPException(
+            status_code=404,
+            detail="Plant not found or not owned by user"
+        )
+
+    return {
+        "message": "Plant watered successfully",
+        "plant_id": plant.id
+    }
 
 
 # ===============================
-# WATER ALL DUE PLANTS
+# BULK WATERING (OPTIONAL)
 # ===============================
 @router.post("/water-all")
-def water_all(user_id: int, db: Session = Depends(get_db)):
+def water_all_plants(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user_id)
+):
     """
-    Water all plants that need watering
+    Waters all plants that are currently due.
     """
-    return water_all_due_plants(db, user_id)
+    plants = irrigation_service.water_all_due_plants(
+        db=db,
+        user_id=user_id
+    )
+
+    return {
+        "message": f"{len(plants)} plants watered",
+        "count": len(plants)
+    }

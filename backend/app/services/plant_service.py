@@ -2,6 +2,8 @@
 Plant service layer contains business logic related to plants.
 Routes --> call services--> talk to database.
 """
+
+
 from sqlalchemy.orm import Session
 from app.models.plant import Plant
 from app.models.location import Location
@@ -33,7 +35,8 @@ def create_plant(db: Session, plant: PlantCreate, user_id: int):
         environment_type=plant.environment_type,
         planting_date=plant.planting_date,
         source=plant.source,
-        user_id=user_id
+        user_id=user_id,
+        use_sensor=plant.use_sensor
     )
 
     db.add(new_plant)

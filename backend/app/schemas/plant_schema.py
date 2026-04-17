@@ -31,6 +31,7 @@ class PlantCreate(BaseModel):
     planting_date: Optional[date] = None
 
     source: Optional[str] = "manual"
+    use_sensor: Optional[bool] = False
 
     # 🌱 NEW
     watering_interval_days: Optional[int] = 3
@@ -50,6 +51,7 @@ class PlantUpdate(BaseModel):
     planting_date: Optional[date] = None
 
     is_synced: Optional[bool] = None
+    use_sensor: Optional[bool] = None
 
     # 🌱 NEW
     watering_interval_days: Optional[int] = None
@@ -73,6 +75,7 @@ class PlantResponse(BaseModel):
 
     is_synced: bool
     source: str
+    use_sensor: bool
 
     created_at: datetime
 

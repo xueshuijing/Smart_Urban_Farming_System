@@ -26,6 +26,10 @@ Architecture Role:
 - Starts the backend server
 """
 
+
+
+#backend/main.py
+
 # ===============================
 # FORCE MODEL REGISTRATION
 # ===============================
@@ -46,9 +50,9 @@ from app.models.plant_species_cache import PlantSpeciesCache
 # ===============================
 from fastapi import FastAPI
 
-from app.api.v1.routes import plants, auth, locations, irrigation
+from app.api.v1.routes import plants, auth, locations, irrigation, notifications
 from app.database.db import Base, engine
-
+from app.workers.scheduler import start_scheduler
 from app.core.logger import setup_logger
 from app.core.error_handler import add_exception_handlers
 
@@ -60,6 +64,9 @@ app = FastAPI(
     title="Smart Farming API",
     version="1.0"
 )
+@app.on_event("startup")
+def startup_event():
+    start_scheduler()
 
 
 # ===============================
@@ -82,8 +89,8 @@ Base.metadata.create_all(bind=engine)
 app.include_router(auth.router)
 app.include_router(plants.router)
 app.include_router(locations.router)
-app.include_router(irrigation.router, prefix="/irrigation", tags=["Irrigation"])
-
+app.include_router(irrigation.router)
+app.include_router(notifications.router, prefix="/notifications",tags=["Notifications"])
 
 # ===============================
 # ERROR HANDLERS (CENTRALIZED)

@@ -10,6 +10,10 @@ from fastapi.testclient import TestClient
 from main import app
 from app.database.db import Base, get_db
 
+pytest_plugins = [
+    "tests.fixtures.plant_fixtures",
+    "tests.fixtures.soil_fixtures",
+]
 
 # -----------------------------
 # TEST DATABASE (IN-MEMORY)
@@ -19,7 +23,7 @@ SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
     connect_args={"check_same_thread": False},
-    poolclass=StaticPool  # IMPORTANT for in-memory DB
+    poolclass=StaticPool
 )
 
 TestingSessionLocal = sessionmaker(
@@ -30,21 +34,33 @@ TestingSessionLocal = sessionmaker(
 
 
 # -----------------------------
-# OVERRIDE DEPENDENCY
+# DB FIXTURE (SHARED SESSION)
 # -----------------------------
-def override_get_db():
-    db = TestingSessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+@pytest.fixture
+def db():
+    connection = engine.connect()
+    transaction = connection.begin()
+    Base.metadata.create_all(bind=connection)
+    session = TestingSessionLocal(bind=connection)
+
+    yield session
+
+    session.close()
+    transaction.rollback()
+    connection.close()
 
 
 # -----------------------------
-# CLIENT FIXTURE
+# CLIENT FIXTURE (USES SAME DB)
 # -----------------------------
-@pytest.fixture(scope="function")
-def client():
+@pytest.fixture
+def client(db):
+    def override_get_db():
+        try:
+            yield db
+        finally:
+            pass
+
     app.dependency_overrides[get_db] = override_get_db
 
     Base.metadata.create_all(bind=engine)
@@ -57,36 +73,41 @@ def client():
 
 
 # -----------------------------
-# USER FACTORY FIXTURE
+# USER FACTORY
 # -----------------------------
 @pytest.fixture
-def create_user(client):
+def user_factory(client):
     def _create_user(email=None, password="test12345"):
         if not email:
             email = f"test_{uuid.uuid4()}@example.com"
 
-        # Register
         client.post("/auth/register", json={
             "email": email,
             "password": password
         })
 
-        # Login
         response = client.post("/auth/login", data={
             "username": email,
             "password": password
         })
 
-        assert response.status_code == 200, f"Login failed: {response.text}"
+        assert response.status_code == 200
 
         return response.json()["access_token"]
 
     return _create_user
 
-
 # -----------------------------
-# DEFAULT TOKEN FIXTURE
+# BACKWARD COMPATIBILITY FIXTURE
 # -----------------------------
 @pytest.fixture
-def token(create_user):
-    return create_user()
+def create_user(user_factory):
+    return user_factory
+
+
+# -----------------------------
+# DEFAULT USER
+# -----------------------------
+@pytest.fixture
+def token(user_factory):
+    return user_factory()
