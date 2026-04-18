@@ -104,16 +104,16 @@ smart-farming-system/
 │ ├── main.py # FastAPI entry point
 │ ├── alembic/ # Database migrations
 │ ├── app/
-│ │ ├── core/ # Config, security, logging
-│ │ ├── api/ # API routes (v1)
-│ │ ├── database/ # Database connection
-│ │ ├── models/ # Database models
-│ │ ├── schemas/ # Data validation
-│ │ ├── services/ # Business logic
-│ │ ├── ai/ # AI features
-│ │ ├── integrations/ # External APIs / IoT
-│ │ ├── workers/ # Background tasks
-│ │ └── utils/ # Helper functions
+│   ├── core/ # Config, security, logging
+│   ├── api/ # API routes (v1)
+│   ├── database/ # Database connection
+│   ├── models/ # Database models
+│   ├── schemas/ # Data validation
+│   ├── services/ # Business logic
+│   ├── ai/ # AI features
+│   ├── integrations/ # External APIs / IoT
+│   ├── workers/ # Background tasks
+│   └── utils/ # Helper functions
 │
 ├── frontend/
 │ └── streamlit_app.py # Streamlit UI
