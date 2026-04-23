@@ -98,8 +98,8 @@ Base.metadata.create_all(bind=engine)
 # ROUTES
 # ===============================
 app.include_router(auth.router)
-app.include_router(plants.router, prefix="/api/v1")
-app.include_router(species.router, prefix="/api/v1")
+app.include_router(plants.router)
+app.include_router(species.router)
 app.include_router(locations.router)
 app.include_router(irrigation.router)
 app.include_router(notifications.router, prefix="/notifications",tags=["Notifications"])

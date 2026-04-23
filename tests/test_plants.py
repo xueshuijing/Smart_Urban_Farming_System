@@ -117,10 +117,9 @@ def test_create_plant(client, token):
 
     plant_data = {
         "name": "Fern",
-        "species": "Nephrolepis exaltata",
         "environment_type": "indoor",
         "is_synced": True,
-        "source": "web"
+        "data_source": "perenual"
     }
 
     response = client.post("/plants/", json=plant_data, headers=headers)
@@ -128,10 +127,10 @@ def test_create_plant(client, token):
     assert response.status_code in [200, 201]
 
     data = response.json()
-
+    print(f"created plant:  {data}")
     # Validate returned data
     assert data["name"] == plant_data["name"]
-    assert data["species"] == plant_data["species"]
+    assert data["data_source"] == plant_data["data_source"]
 
     # Check system-generated fields exist
     assert "id" in data
@@ -153,10 +152,9 @@ def test_create_and_get_plants(client, token):
 
     client.post("/plants/", json={
         "name": "TestPlant",
-        "species": "TestSpecies",
         "environment_type": "indoor",
         "is_synced": True,
-        "source": "test"
+        "data_source": "test"
     }, headers=headers)
 
     response = client.get("/plants/", headers=headers)
@@ -182,11 +180,10 @@ def test_create_plant_with_location(client, token):
     # Step 2: Create plant linked to that location
     plant_data = {
         "name": "Linked Plant",
-        "species": "Test Species",
         "environment_type": "indoor",
         "is_synced": True,
-        "source": "test",
-        "location_id": location_id   # 🔥 key relationship
+        "data_source": "test",
+        "location_id": location_id   # key relationship
     }
 
     response = client.post("/plants/", json=plant_data, headers=headers)
@@ -207,10 +204,9 @@ def test_create_plant_invalid_location(client, token):
 
     plant_data = {
         "name": "Bad Plant",
-        "species": "Test",
         "environment_type": "indoor",
         "is_synced": True,
-        "source": "test",
+        "data_source": "test",
         "location_id": 999999  # fake ID
     }
 
@@ -243,7 +239,7 @@ def test_create_plant_wrong_user_location(client, create_user):
             "species": "Test",
             "environment_type": "indoor",
             "is_synced": True,
-            "source": "test",
+            "data_source": "test",
             "location_id": location["id"]
         },
         headers=headers_b
@@ -269,7 +265,7 @@ def test_delete_location_blocked_if_has_plants(client, token):
         "species": "Test",
         "environment_type": "indoor",
         "is_synced": True,
-        "source": "test",
+        "data_source": "test",
         "location_id": loc["id"]
     }, headers=headers)
 
