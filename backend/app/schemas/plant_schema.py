@@ -68,7 +68,7 @@ class PlantUpdate(BaseModel):
 class PlantResponse(BaseModel):
     id: int
     name: str
-
+    species_id: Optional[int]
     # Linked species (from cache)
     species: Optional[SpeciesResponse] = None
 

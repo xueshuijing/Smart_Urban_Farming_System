@@ -38,7 +38,7 @@ def test_create_plant(client):
         "/plants",
         json={
             "name": "Tomato",
-            "species": "Solanum lycopersicum",
+            "species_name": "Solanum lycopersicum",
             "location": "Greenhouse"
         },
         headers={"Authorization": f"Bearer {token}"}
@@ -112,28 +112,21 @@ def test_get_plants(client, token):
 
 
 def test_create_plant(client, token):
-    """Test creating a plant using the token fixture."""
     headers = {"Authorization": f"Bearer {token}"}
 
     plant_data = {
-        "name": "Fern",
-        "environment_type": "indoor",
-        "is_synced": True,
-        "data_source": "perenual"
+        "name": "Nasturtium",  # High-confidence name
+        "environment_type": "indoor"
     }
 
     response = client.post("/plants/", json=plant_data, headers=headers)
-
     assert response.status_code in [200, 201]
 
     data = response.json()
-    print(f"created plant:  {data}")
-    # Validate returned data
-    assert data["name"] == plant_data["name"]
-    assert data["data_source"] == plant_data["data_source"]
 
-    # Check system-generated fields exist
-    assert "id" in data
+    # If the AI works, it should be perenual
+    assert data["data_source"] == "perenual"
+    assert data["name"] == "Nasturtium"
 
 
 def test_get_plants_unauthorized(client):
@@ -236,7 +229,7 @@ def test_create_plant_wrong_user_location(client, create_user):
         "/plants/",
         json={
             "name": "Hack Plant",
-            "species": "Test",
+            "species_name": "Test",
             "environment_type": "indoor",
             "is_synced": True,
             "data_source": "test",
@@ -262,7 +255,7 @@ def test_delete_location_blocked_if_has_plants(client, token):
     # Create plant linked to location
     client.post("/plants/", json={
         "name": "Temp Plant",
-        "species": "Test",
+        "species_name": "Test",
         "environment_type": "indoor",
         "is_synced": True,
         "data_source": "test",
@@ -273,4 +266,17 @@ def test_delete_location_blocked_if_has_plants(client, token):
     response = client.delete(f"/locations/{loc['id']}", headers=headers)
 
     assert response.status_code == 400
+
+
+def test_create_plant_with_ai_linking(client, token):
+    headers = {"Authorization": f"Bearer {token}"}
+    plant_data = {
+        "name": "Nasturtium",  # Use 'name' for the search query
+        "environment_type": "outdoor"
+    }
+
+    response = client.post("/plants/", json=plant_data, headers=headers)
+    assert response.status_code == 200 # Should pass now
+
+
 

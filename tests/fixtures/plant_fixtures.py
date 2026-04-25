@@ -4,6 +4,7 @@
 import pytest
 from app.models.plant import Plant
 from app.models.plant_species_cache import PlantSpeciesCache
+from unittest.mock import patch
 
 
 # -------------------------
@@ -24,6 +25,9 @@ def plant(db, species):
     db.refresh(plant)
     return plant
 
+# -------------------------
+# DB LEVEL PLANT
+# -------------------------
 
 @pytest.fixture
 def sensor_plant(db, species):
@@ -50,7 +54,7 @@ def plant_api(client, user_token,species):
         "/plants/",
         json={
             "name": "API Plant",
-            "plant_species.id": species.id,
+            "species_id": species.id,
             "environment_type": "indoor"
         },
         headers={"Authorization": f"Bearer {user_token}"}
@@ -58,10 +62,20 @@ def plant_api(client, user_token,species):
 
     return response.json()
 
+
+# -------------------------
+# SPECIES
+# -------------------------
 @pytest.fixture
 def species(db):
-    sp = PlantSpeciesCache(scientific_name="Test")
+    sp = PlantSpeciesCache(
+        external_species_id="7405",  # Use a real or dummy Perenual ID
+        scientific_name="Solanum melongena",
+        common_name="Eggplant",
+        watering_interval_days=4
+    )
     db.add(sp)
     db.commit()
     db.refresh(sp)
     return sp
+

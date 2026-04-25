@@ -27,7 +27,7 @@ def create_test_plant(client, token):
         "/plants/",
         json={
             "name": "Test Plant",
-            "species": "Test Species",
+            "species_name": "Test Species",
             "environment_type": "indoor",
             "is_synced": True,
             "source": "test"
