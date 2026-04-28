@@ -37,16 +37,19 @@ Result returned to caller
 
 from datetime import date, timedelta
 from sqlalchemy.orm import Session
-from app.models.plant import Plant
 from app.models.soil_condition import SoilCondition
 from app.services import notification_service
 from app.models.notification import Notification
+from app.models.plant import Plant
 
 # ===============================
 # CONFIG (sample thresholds)
 # ===============================
 MOISTURE_THRESHOLD = 30  # below = dry
 
+def _get_thirsty_plants(db: Session, user_id: int):
+    plants = db.query(Plant).filter(Plant.user_id == user_id).all()
+    return [plant for plant in plants if needs_watering(db, plant)]
 
 # ===============================
 # GET LATEST SOIL DATA
@@ -61,14 +64,9 @@ def get_latest_soil_condition(db: Session, plant_id: int):
 # CHECK IF PLANT NEEDS WATER
 # ===============================
 def needs_watering(db: Session, plant: Plant) -> bool:
-    """
-    Hybrid logic:
-    - If sensor data exists → use moisture
-    - Else → fallback to schedule
-    """
+    # Determines if a plant needs watering based on sensor or schedule
 
     soil = get_latest_soil_condition(db, plant.id)
-
     # SENSOR MODE
     if plant.use_sensor and soil and soil.moisture is not None:
         return float(soil.moisture) < MOISTURE_THRESHOLD
@@ -89,39 +87,33 @@ def needs_watering(db: Session, plant: Plant) -> bool:
 # GET PLANTS NEEDING WATER
 # ===============================
 def get_plants_needing_water(db: Session, user_id: int):
-    plants = db.query(Plant).filter(Plant.user_id == user_id).all()
+    thirsty_plants = _get_thirsty_plants(db, user_id)
 
     result = []
 
-    for plant in plants:
-        # 1. Check if the plant currently needs water
-        is_thirsty = needs_watering(db, plant)
-
-        # 2. Check if a notification already exists
+    for plant in thirsty_plants:
         existing_notification = db.query(Notification).filter(
             Notification.plant_id == plant.id,
             Notification.user_id == user_id,
             Notification.type == "irrigation"
         ).first()
 
-        # CASE A: Plant is thirsty but has no notification -> CREATE ONE
-        if is_thirsty and not existing_notification:
+        if not existing_notification:
             notification_service.create_notification(
                 db=db,
                 user_id=user_id,
                 plant=plant,
                 message=f"Plant '{plant.name}' needs watering"
             )
-            result.append(plant)
 
-        # CASE B: Plant is NOT thirsty but a notification still exists -> DELETE IT
-        elif not is_thirsty and existing_notification:
-            db.delete(existing_notification)
-            db.commit()
-
-        # CASE C: Plant is thirsty and notification exists -> JUST ADD TO RESULT
-        elif is_thirsty:
-            result.append(plant)
+        result.append({
+            "plant_id": plant.id,
+            "name": plant.name,
+            "last_watered": plant.last_watered,
+            "watering_interval_days": plant.watering_interval_days,
+            "use_sensor": plant.use_sensor,
+            "needs_water": True
+        })
 
     return result
 
@@ -155,8 +147,7 @@ def water_plant(db: Session, plant_id: int, user_id: int):
 # BULK WATERING
 # ===============================
 def water_all_due_plants(db: Session, user_id: int):
-    # This calls your earlier logic that finds thirsty plants
-    plants = get_plants_needing_water(db, user_id)
+    plants = _get_thirsty_plants(db, user_id)
 
     for plant in plants:
         plant.last_watered = date.today()

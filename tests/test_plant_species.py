@@ -21,7 +21,7 @@ def test_plant_inherits_watering_from_species(client, token):
     # We don't provide 'watering_interval_days' here
     plant_data = {
         "name": "Eggplant",
-        "environment_type": "outdoor"
+        "plant_type": "Test type",
     }
 
     response = client.post("/plants/", json=plant_data, headers=headers)
@@ -41,7 +41,7 @@ def test_create_plant_manual_fallback(client, token):
 
     plant_data = {
         "name": "Xylo-Zorg-Plant-99",
-        "environment_type": "indoor"
+        "plant_type": "Test type",
     }
 
     response = client.post("/plants/", json=plant_data, headers=headers)
@@ -60,7 +60,7 @@ def test_create_plant_schema_cleanup(client, token):
 
     plant_data = {
         "name": "Cleanup Test",
-        "environment_type": "indoor",
+        "plant_type": "Test type",
         "species_name": "Fake Name",  # This caused a crash before
         "data_source": "hacker"  # This caused a crash before
     }

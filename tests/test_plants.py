@@ -116,7 +116,7 @@ def test_create_plant(client, token):
 
     plant_data = {
         "name": "Nasturtium",  # High-confidence name
-        "environment_type": "indoor"
+        "plant_type": "flower"
     }
 
     response = client.post("/plants/", json=plant_data, headers=headers)
@@ -145,7 +145,7 @@ def test_create_and_get_plants(client, token):
 
     client.post("/plants/", json={
         "name": "TestPlant",
-        "environment_type": "indoor",
+        "plant_type": "Test type",
         "is_synced": True,
         "data_source": "test"
     }, headers=headers)
@@ -173,7 +173,7 @@ def test_create_plant_with_location(client, token):
     # Step 2: Create plant linked to that location
     plant_data = {
         "name": "Linked Plant",
-        "environment_type": "indoor",
+        "plant_type": "Test type",
         "is_synced": True,
         "data_source": "test",
         "location_id": location_id   # key relationship
@@ -197,7 +197,7 @@ def test_create_plant_invalid_location(client, token):
 
     plant_data = {
         "name": "Bad Plant",
-        "environment_type": "indoor",
+        "plant_type": "Test type",
         "is_synced": True,
         "data_source": "test",
         "location_id": 999999  # fake ID
@@ -230,7 +230,7 @@ def test_create_plant_wrong_user_location(client, create_user):
         json={
             "name": "Hack Plant",
             "species_name": "Test",
-            "environment_type": "indoor",
+            "plant_type": "Test type",
             "is_synced": True,
             "data_source": "test",
             "location_id": location["id"]
@@ -256,7 +256,7 @@ def test_delete_location_blocked_if_has_plants(client, token):
     client.post("/plants/", json={
         "name": "Temp Plant",
         "species_name": "Test",
-        "environment_type": "indoor",
+        "plant_type": "temp type",
         "is_synced": True,
         "data_source": "test",
         "location_id": loc["id"]
@@ -271,8 +271,8 @@ def test_delete_location_blocked_if_has_plants(client, token):
 def test_create_plant_with_ai_linking(client, token):
     headers = {"Authorization": f"Bearer {token}"}
     plant_data = {
-        "name": "Nasturtium",  # Use 'name' for the search query
-        "environment_type": "outdoor"
+        "name": "Nasturtium",
+        "plant_type": "Test type"
     }
 
     response = client.post("/plants/", json=plant_data, headers=headers)

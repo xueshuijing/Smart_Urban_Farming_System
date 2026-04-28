@@ -30,7 +30,6 @@ def test_sensor_enabled_no_data_fallback(db, sensor_plant):
     assert needs_watering(db, sensor_plant) is True
 
 
-
 def test_full_irrigation_flow(client, token):
     # create plant
     response = client.post(
