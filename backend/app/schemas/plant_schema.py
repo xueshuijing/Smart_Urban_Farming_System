@@ -103,6 +103,7 @@ class PlantResponse(BaseModel):
     # ===============================
     @computed_field
     @property
+    #If user override exists, use it; otherwise, use the species value
     def effective_watering_interval(self) -> int:
         return get_effective_watering(self)
 

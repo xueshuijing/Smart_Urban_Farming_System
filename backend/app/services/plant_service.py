@@ -157,7 +157,7 @@ def create_plant(db: Session, plant: PlantCreate, user_id: int):
         data_source="perenual" if species_id else "manual",
         user_id=user_id,
         use_sensor=plant.use_sensor,
-        watering_interval_days=final_interval
+        watering_interval_days= final_interval
     )
 
     db.add(new_plant)
