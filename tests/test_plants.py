@@ -1,98 +1,6 @@
-import pytest
-import uuid
-from fastapi.testclient import TestClient
-from main import app # Replace 'main' with your actual entry file name
-
-'''
-def get_auth_token(client):
-    unique_email = f"test_{uuid.uuid4()}@example.com"
-    paswd = "test123"
-
-    # Register user
-    client.post(
-        "/auth/register",
-        json={
-            "email": unique_email,
-            "password": paswd
-        }
-    )
-
-    # Login user
-    response = client.post(
-        "/auth/login",
-        data={
-            "username": unique_email,
-            "password": paswd
-        }
-    )
-    # Safety check: if this fails, response.json() is a dict (safe for logging)
-    assert response.status_code == 200, f"Login failed: {response.text}"
-
-    return response.json()["access_token"]
-
-
-def test_create_plant(client):
-    token = get_auth_token(client)
-
-    response = client.post(
-        "/plants",
-        json={
-            "name": "Tomato",
-            "species_name": "Solanum lycopersicum",
-            "location": "Greenhouse"
-        },
-        headers={"Authorization": f"Bearer {token}"}
-    )
-
-    assert response.status_code == 200
-
-
-def test_get_plants(client):
-    token = get_auth_token(client)
-
-    response = client.get(
-        "/plants",
-        headers={"Authorization": f"Bearer {token}"}
-    )
-
-    assert response.status_code == 200
-
-'''
-
-'''
-@pytest.fixture
-def client():
-    return TestClient(app)
-
-@pytest.fixture
-def token(client):
-    """Registers a unique user and returns an auth token string."""
-    unique_email = f"test_{uuid.uuid4()}@example.com"
-    paswd = "test12345"
-
-    # 1. Register User (JSON)
-    client.post(
-        "/auth/register",
-        json={"email": unique_email, "password": paswd}
-    )
-
-    # 2. Login User (Form Data)
-    # MUST use 'data=' and 'username' for OAuth2 compliance
-    response = client.post(
-        "/auth/login",
-        data={
-            "username": unique_email,
-            "password": paswd
-        }
-    )
-
-    assert response.status_code == 200, f"Login failed: {response.text}"
-    return response.json()["access_token"]
-
-'''
-
-
 # tests/test_plants.py
+
+from tests.utils.test_helpers import create_test_location
 
 def test_get_plants(client, token):
     """Test retrieving plants using the token fixture."""
@@ -110,7 +18,6 @@ def test_get_plants(client, token):
         assert "id" in data[0]
         assert "name" in data[0]
 
-
 def test_create_plant(client, token):
     headers = {"Authorization": f"Bearer {token}"}
 
@@ -127,7 +34,6 @@ def test_create_plant(client, token):
     # If the AI works, it should be perenual
     assert data["data_source"] == "perenual"
     assert data["name"] == "Nasturtium"
-
 
 def test_get_plants_unauthorized(client):
     """
@@ -156,10 +62,6 @@ def test_create_and_get_plants(client, token):
 
     assert any(p["name"] == "TestPlant" for p in data)
 
-
-from tests.utils.test_helpers import create_test_location
-
-
 def test_create_plant_with_location(client, token):
     """
     Test that a plant can be linked to a location.
@@ -187,7 +89,6 @@ def test_create_plant_with_location(client, token):
 
     # Validate relationship
     assert data["location_id"] == location_id
-
 
 def test_create_plant_invalid_location(client, token):
     """
@@ -240,7 +141,6 @@ def test_create_plant_wrong_user_location(client, create_user):
 
     assert response.status_code in [403, 404]
 
-
 def test_delete_location_blocked_if_has_plants(client, token):
     """
     Deleting a location with plants should be blocked.
@@ -266,7 +166,6 @@ def test_delete_location_blocked_if_has_plants(client, token):
     response = client.delete(f"/locations/{loc['id']}", headers=headers)
 
     assert response.status_code == 400
-
 
 def test_create_plant_with_ai_linking(client, token):
     headers = {"Authorization": f"Bearer {token}"}

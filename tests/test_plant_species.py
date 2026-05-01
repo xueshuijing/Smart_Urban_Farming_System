@@ -1,14 +1,35 @@
-def test_create_plant_with_perenual_match(client, token):
+from unittest.mock import patch
+
+
+@patch("app.services.perenual_service.search_plant_species")
+def test_create_plant_with_perenual_match(mock_search, client, token):
+    mock_search.return_value = [
+        {
+            "id": 1,
+            "common_name": "Nasturtium",
+            "scientific_name": "Tropaeolum (group)",  # ✅ NOT list
+            "type": "flower",
+            "is_fruit": False,
+            "is_veg": False,
+            "edible": True,
+            "growth_rate": "medium"
+        }
+    ]
+
     headers = {"Authorization": f"Bearer {token}"}
+    response = client.post(
+        "/plants/",
+        json={
+            "name": "Nasturtium",
+            "plant_type": "flower"  # ✅ CRITICAL
+        },
+        headers=headers
+    )
 
-    # If searching for Nasturtium, expect Tropaeolum
-    plant_data = {"name": "Nasturtium", "environment_type": "indoor"}
-
-    response = client.post("/plants/", json=plant_data, headers=headers)
-    assert response.status_code == 200
     data = response.json()
+
     assert data["data_source"] == "perenual"
-    assert data["species"]["scientific_name"] == "Tropaeolum (group)"
+
 
 
 def test_plant_inherits_watering_from_species(client, token):

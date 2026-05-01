@@ -36,6 +36,7 @@ Result returned to caller
 
 
 from datetime import date, timedelta
+from sqlalchemy import func, and_
 from sqlalchemy.orm import Session
 from app.models.soil_condition import SoilCondition
 from app.services import notification_service
@@ -49,7 +50,41 @@ MOISTURE_THRESHOLD = 30  # below = dry
 
 def _get_thirsty_plants(db: Session, user_id: int):
     plants = db.query(Plant).filter(Plant.user_id == user_id).all()
-    return [plant for plant in plants if needs_watering(db, plant)]
+    plant_ids = [p.id for p in plants]
+
+    if not plant_ids:
+        return []
+
+    # Subquery: get latest timestamp per plant
+    subquery = db.query(
+        SoilCondition.plant_id,
+        func.max(SoilCondition.recorded_at).label("max_time")
+    ).filter(
+        SoilCondition.plant_id.in_(plant_ids)
+    ).group_by(SoilCondition.plant_id).subquery()
+
+    # Join to get full row of latest soil condition
+    latest_soils = db.query(SoilCondition).join(
+        subquery,
+        and_(
+            SoilCondition.plant_id == subquery.c.plant_id,
+            SoilCondition.recorded_at == subquery.c.max_time
+        )
+    ).all()
+
+    # Build lookup map
+    soil_map = {s.plant_id: s for s in latest_soils}
+
+    # Filter thirsty plants using preloaded soil data
+    result = []
+
+    for plant in plants:
+        soil = soil_map.get(plant.id)
+
+        if _needs_watering_with_soil(plant, soil):
+            result.append(plant)
+
+    return result
 
 # ===============================
 # GET LATEST SOIL DATA
@@ -63,15 +98,12 @@ def get_latest_soil_condition(db: Session, plant_id: int):
 # ===============================
 # CHECK IF PLANT NEEDS WATER
 # ===============================
-def needs_watering(db: Session, plant: Plant) -> bool:
-    # Determines if a plant needs watering based on sensor or schedule
-
-    soil = get_latest_soil_condition(db, plant.id)
+def _needs_watering_with_soil(plant: Plant, soil: SoilCondition | None) -> bool:
     # SENSOR MODE
     if plant.use_sensor and soil and soil.moisture is not None:
         return float(soil.moisture) < MOISTURE_THRESHOLD
 
-    # SCHEDULE MODE (fallback)
+    # SCHEDULE MODE
     if not plant.watering_interval_days:
         return False
 
@@ -88,15 +120,20 @@ def needs_watering(db: Session, plant: Plant) -> bool:
 # ===============================
 def get_plants_needing_water(db: Session, user_id: int):
     thirsty_plants = _get_thirsty_plants(db, user_id)
+    plant_ids = [p.id for p in thirsty_plants]
+
+    existing_notifications = db.query(Notification).filter(
+        Notification.user_id == user_id,
+        Notification.type == "irrigation",
+        Notification.plant_id.in_(plant_ids)
+    ).all()
+    notification_map = {n.plant_id: n for n in existing_notifications}
 
     result = []
 
     for plant in thirsty_plants:
-        existing_notification = db.query(Notification).filter(
-            Notification.plant_id == plant.id,
-            Notification.user_id == user_id,
-            Notification.type == "irrigation"
-        ).first()
+        existing_notification = notification_map.get(plant.id)
+        print(f"Processing plant {plant.id}")
 
         if not existing_notification:
             notification_service.create_notification(
@@ -114,8 +151,9 @@ def get_plants_needing_water(db: Session, user_id: int):
             "use_sensor": plant.use_sensor,
             "needs_water": True
         })
-
+    db.commit()
     return result
+
 
 # ===============================
 # WATER PLANT

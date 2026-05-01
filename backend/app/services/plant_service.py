@@ -31,7 +31,7 @@ Result returned to route
 """
 
 
-#app.services.plant_service.py
+# app/services/plant_service.py
 
 
 from sqlalchemy.orm import Session,joinedload
@@ -42,7 +42,6 @@ from app.core.exceptions import NotFoundError, PermissionDeniedError
 from app.models.plant_species_cache import PlantSpeciesCache
 from app.integrations.perenual_api import get_species_details, normalize_species_data, search_species
 from app.utils.species_matching import select_best_match, rank_species_matches, normalize_candidate
-
 
 # ===============================
 # HELPERS
@@ -57,9 +56,6 @@ def _validate_location(db: Session, location_id: int, user_id: int):
         raise NotFoundError("Location not found")
     if location.user_id != user_id:
         raise PermissionDeniedError("Not allowed to use this location")
-
-
-# app/services/plant_service.py
 
 def _detect_species(db: Session, plant_name: str, plant_type: str = None):
     # Pass plant_type to suggestions
@@ -85,7 +81,6 @@ def _detect_species(db: Session, plant_name: str, plant_type: str = None):
     except Exception as e:
         print(f"[AI] Failed to fetch species: {e}")
         return None
-
 
 def _attach_metadata(plant: Plant):
     if plant:
@@ -166,7 +161,6 @@ def create_plant(db: Session, plant: PlantCreate, user_id: int):
 
     return _attach_metadata(new_plant)
 
-
 # ===============================
 # GET ALL PLANTS (USER-SCOPED)
 # ===============================
@@ -244,7 +238,6 @@ def update_plant(db: Session, plant_id: int, plant_update: PlantUpdate, user_id:
     db.commit()
     db.refresh(plant)
     return _attach_metadata(plant)
-
 
 # ===============================
 # DELETE PLANT (USER-SCOPED)
@@ -388,6 +381,27 @@ def get_or_create_species_cache(db: Session, species_id: int, fallback_name: str
 
     return new_species
 
+def cache_species_candidates(db: Session, candidates: list, limit: int = 2):
+    """
+    Background worker to pre-fill cache for top search results.
+    """
+    for c in candidates[:limit]:
+        species_id = c.get("id")
+        if not species_id:
+            continue
+
+        exists = db.query(PlantSpeciesCache).filter(
+            PlantSpeciesCache.external_species_id == str(species_id)
+        ).first()
+
+        if exists:
+            continue
+
+        try:
+            # Pass the name as fallback so the cache isn't empty if the details API fails
+            get_or_create_species_cache(db, species_id, fallback_name=c.get("scientific_name"))
+        except Exception as e:
+            print(f"[CACHE] Failed to cache {species_id}: {e}")
 
 # ===============================
 # SPECIES SUGGESTION
@@ -434,29 +448,10 @@ def suggest_species(db: Session, query: str, plant_type: str = None):
 
     # 3. Rank them (Passing plant_type for the edibility boost)
     ranked = rank_species_matches(query, candidates, plant_type=plant_type)
+    print(f"[DEBUG] Input: {query} (Type: {plant_type})")
 
     return ranked[:5]
 
 
-def cache_species_candidates(db: Session, candidates: list, limit: int = 2):
-    """
-    Background worker to pre-fill cache for top search results.
-    """
-    for c in candidates[:limit]:
-        species_id = c.get("id")
-        if not species_id:
-            continue
 
-        exists = db.query(PlantSpeciesCache).filter(
-            PlantSpeciesCache.external_species_id == str(species_id)
-        ).first()
-
-        if exists:
-            continue
-
-        try:
-            # Pass the name as fallback so the cache isn't empty if the details API fails
-            get_or_create_species_cache(db, species_id, fallback_name=c.get("scientific_name"))
-        except Exception as e:
-            print(f"[CACHE] Failed to cache {species_id}: {e}")
 
