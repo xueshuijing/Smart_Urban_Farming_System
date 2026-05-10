@@ -5,7 +5,21 @@
 % =========================================================
 
 normalize(X, Canonical) :-
+
     alias(X, Canonical).
 
+
 normalize(X, X) :-
+
+    plant(X).
+
+
+normalize(X, X) :-
+
+    group(X).
+
+normalize(X, X) :-
+
+    nonvar(X),
+
     \+ alias(X, _).

@@ -82,10 +82,8 @@ expanded_conflict(X, Y, Source, Confidence) :-
 
 safe_companion(X, Y, Source, Confidence) :-
 
-    % ormalize(X, NX),
+    normalize(X, NX),
     normalize(Y, NY),
-
-    NX \= NY,
 
     (
         direct_support(
@@ -94,7 +92,9 @@ safe_companion(X, Y, Source, Confidence) :-
             Source,
             Confidence
         )
+
         ;
+
         expanded_support(
             NX,
             NY,
@@ -102,6 +102,8 @@ safe_companion(X, Y, Source, Confidence) :-
             Confidence
         )
     ),
+
+    NX \= NY,
 
     \+ direct_conflict(NX, NY),
 
@@ -131,10 +133,18 @@ direct_conflict(X, Y) :-
 good_neighbor(X, Y) :-
     safe_companion(X, Y, _, _).
 
-bad_neighbor(X, Y) :-
+should_plant_with(X, Y) :-
+
+    good_neighbor(X, Y).
+
+bba(X, Y) :-
     expanded_conflict(X, Y, _, _).
 
 should_avoid(X, Y) :-
+
+    direct_conflict(X, Y).
+
+should_avoid(X, Y) :-
+
     expanded_conflict(X, Y, _, _).
-should_plant_with(X, Y) :-
-    good_neighbor(X, Y).
+
