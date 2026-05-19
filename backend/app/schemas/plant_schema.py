@@ -15,7 +15,7 @@ Layer Interaction:
 - Used by: Routes, Services
 """
 
-#app.schemas.plant_schema.py
+# app.schemas.plant_schema.py
 
 from datetime import date, datetime
 from typing import Literal
@@ -30,6 +30,8 @@ from app.utils.plant_logic import get_effective_watering
 
 # Convert the list to a Type that Pydantic understands
 PlantType = Literal[tuple(PLANT_TYPES)]
+
+
 # ===============================
 # CREATE
 # ===============================
@@ -104,7 +106,7 @@ class PlantResponse(BaseModel):
     # ===============================
     @computed_field
     @property
-    #If user override exists, use it; otherwise, use the species value
+    # If user override exists, use it; otherwise, use the species value
     def effective_watering_interval(self) -> int:
         return get_effective_watering(self)
 

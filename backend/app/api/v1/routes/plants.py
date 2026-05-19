@@ -31,32 +31,25 @@ Database updated via models
 Response returned to client
 """
 
-#app.api.routes.plants.py
+# app.api.routes.plants.py
 
-from typing import List
-
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-
+from typing import List
 from app.api.dependencies import get_current_user_id
-from app.core.exceptions import NotFoundError, PermissionDeniedError
 from app.database.db import get_db
 from app.schemas.plant_schema import PlantCreate, PlantUpdate, PlantResponse
 from app.services import plant_service
+from app.core.exceptions import NotFoundError, PermissionDeniedError
 
-router = APIRouter(
-    prefix="/plants",
-    tags=["Plants"]
-)
+router = APIRouter(prefix="/plants", tags=["Plants"])
+
 
 # ===============================
 # COMPANION PLANT
 # ===============================
 @router.get("/recommendations")
-def get_recommendations_endpoint(
-    db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id)
-):
+def get_recommendations_endpoint(db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
     return plant_service.get_companion_recommendations(db, user_id)
 
 
@@ -67,7 +60,7 @@ def get_recommendations_endpoint(
 def create_plant(
     plant: PlantCreate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id)
+    user_id: int = Depends(get_current_user_id),
 ):
     try:
         return plant_service.create_plant(db, plant, user_id)
@@ -75,6 +68,7 @@ def create_plant(
         raise HTTPException(status_code=404, detail=str(e))
     except PermissionError as e:
         raise HTTPException(status_code=403, detail=str(e))
+
 
 # ===============================
 # CREATE PLANT WITH SUGGESTION
@@ -84,12 +78,10 @@ def create_plant_with_species(
     plant: PlantCreate,
     species_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id)
+    user_id: int = Depends(get_current_user_id),
 ):
     try:
-        return plant_service.create_plant_with_species(
-            db, plant, user_id, species_id
-        )
+        return plant_service.create_plant_with_species(db, plant, user_id, species_id)
 
     except NotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -102,10 +94,7 @@ def create_plant_with_species(
 # GET ALL PLANTS
 # ===============================
 @router.get("/", response_model=List[PlantResponse])
-def get_plants(
-    db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id)
-):
+def get_plants(db: Session = Depends(get_db), user_id: int = Depends(get_current_user_id)):
     return plant_service.get_plants(db, user_id)
 
 
@@ -116,7 +105,7 @@ def get_plants(
 def get_plant(
     plant_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id)
+    user_id: int = Depends(get_current_user_id),
 ):
     plant = plant_service.get_plant(db, plant_id, user_id)
 
@@ -134,7 +123,7 @@ def update_plant(
     plant_id: int,
     plant_update: PlantUpdate,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id)
+    user_id: int = Depends(get_current_user_id),
 ):
     try:
         updated = plant_service.update_plant(db, plant_id, plant_update, user_id)
@@ -157,7 +146,7 @@ def update_plant(
 def delete_plant(
     plant_id: int,
     db: Session = Depends(get_db),
-    user_id: int = Depends(get_current_user_id)
+    user_id: int = Depends(get_current_user_id),
 ):
     deleted = plant_service.delete_plant(db, plant_id, user_id)
 
@@ -165,4 +154,3 @@ def delete_plant(
         raise HTTPException(status_code=404, detail="Plant not found")
 
     return {"message": "Plant deleted successfully"}
-
